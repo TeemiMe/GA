@@ -1,0 +1,73 @@
+import random
+import string
+import matplotlib.pyplot as plt
+
+# Define target string
+target_string = "SILJE_MELKILD*588294"
+
+# Define parameters
+population_size = 100
+mutation_rate = 0.02
+elite_percentage = 0.1
+
+# Generate initial population
+def generate_individual():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits + "_*") for _ in range(len(target_string)))
+
+def initial_population():
+    return [generate_individual() for _ in range(population_size)]
+
+# Calculate fitness of an individual
+def calculate_fitness(individual):
+    return sum(1 for i, j in zip(individual, target_string) if i == j) / len(target_string)
+
+# Selection: Roulette wheel selection
+def selection(population):
+    fitness_sum = sum(calculate_fitness(individual) for individual in population)
+    probabilities = [calculate_fitness(individual) / fitness_sum for individual in population]
+    return random.choices(population, probabilities, k=2)
+
+# Crossover: Single point crossover
+def crossover(parent1, parent2):
+    crossover_point = random.randint(1, len(target_string) - 1)
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+    return child1, child2
+
+# Mutation
+def mutate(individual):
+    mutated_individual = list(individual)
+    for i in range(len(mutated_individual)):
+        if random.random() < mutation_rate:
+            mutated_individual[i] = random.choice(string.ascii_uppercase + string.digits + "_*")
+    return ''.join(mutated_individual)
+
+# Genetic algorithm
+def genetic_algorithm():
+    population = initial_population()
+    generation = 0
+    best_fit_chromosomes = []
+    while True:
+        population = sorted(population, key=lambda x: calculate_fitness(x), reverse=True)
+        best_fit = population[0]
+        best_fit_chromosomes.append(best_fit)
+        if best_fit == target_string:
+            break
+        next_generation = [best_fit]
+        elite_count = int(population_size * elite_percentage)
+        next_generation.extend([mutate(child) for parent1, parent2 in [selection(population) for _ in range(population_size - elite_count)] for child in crossover(parent1, parent2)])
+        population = next_generation
+        generation += 1
+    return best_fit_chromosomes, generation
+
+# Run genetic algorithm
+best_fit_chromosomes, generations = genetic_algorithm()
+print("Best Fit Solution:", best_fit_chromosomes[-1])
+print("Generations:", generations)
+
+# Plot evolution of best-fit chromosome across generations
+plt.plot(best_fit_chromosomes)
+plt.xlabel('Generation')
+plt.ylabel('Best Fit Chromosome')
+plt.title('Evolution of Best-Fit Chromosome')
+plt.show()
